@@ -44,14 +44,18 @@ $y->do();
 bar::doStatic();
 ?>
 --EXPECT--
-array(2) {
+array(3) {
+  ["type"]=>
+  string(6) "before"
   ["method"]=>
   string(3) "foo"
   ["object"]=>
   NULL
 }
 (foo)
-array(3) {
+array(4) {
+  ["type"]=>
+  string(5) "after"
   ["method"]=>
   string(3) "foo"
   ["object"]=>
@@ -59,7 +63,9 @@ array(3) {
   ["retval"]=>
   NULL
 }
-array(2) {
+array(3) {
+  ["type"]=>
+  string(6) "before"
   ["method"]=>
   string(2) "do"
   ["object"]=>
@@ -67,7 +73,9 @@ array(2) {
   }
 }
 (do)
-array(3) {
+array(4) {
+  ["type"]=>
+  string(5) "after"
   ["method"]=>
   string(2) "do"
   ["object"]=>
@@ -76,14 +84,18 @@ array(3) {
   ["retval"]=>
   int(123)
 }
-array(2) {
+array(3) {
+  ["type"]=>
+  string(6) "before"
   ["method"]=>
   string(8) "doStatic"
   ["object"]=>
   string(3) "bar"
 }
 (doStatic)
-array(3) {
+array(4) {
+  ["type"]=>
+  string(5) "after"
   ["method"]=>
   string(8) "doStatic"
   ["object"]=>
