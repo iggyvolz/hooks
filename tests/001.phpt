@@ -6,6 +6,8 @@ if (!extension_loaded('hooks')) die('skip: hooks extension required');
 ?>
 --FILE--
 <?php
+use iggyvolz\hooks\PreHook;
+use iggyvolz\hooks\PostHook;
 #[Attribute]
 class x implements PreHook, PostHook{
     public function __construct(){echo "New x\n";}

@@ -4,14 +4,12 @@
 #include "zend_attributes.h"
 #include "hooks_arginfo.h"
 
+zend_class_entry *preHook, *postHook;
+
 static void observer(zend_execute_data *execute_data, zval *return_value)
 {
     bool begin = (return_value == NULL);
-    zval hookName;
-    ZVAL_STRINGL(&hookName, estrdup(begin ? "PreHook" : "PostHook"), strlen(begin ? "PreHook" : "PostHook"));
-    zval hookMethodName;
-    ZVAL_STRINGL(&hookMethodName, estrdup(begin ? "before" : "after"), strlen(begin ? "before" : "after"));
-    zend_class_entry * hookInterface = zend_lookup_class(Z_STR(hookName));
+    zend_class_entry *hookInterface = begin ? preHook : postHook;
     if(!hookInterface) return;
     // Loop through every attribute to see if we should call it
     zval* attribute_zval;
@@ -19,7 +17,7 @@ static void observer(zend_execute_data *execute_data, zval *return_value)
     while((attribute_zval = zend_hash_get_current_data(execute_data->func->common.attributes))) {
         zend_attribute *attribute = (zend_attribute *)(attribute_zval->value.ptr);
         // Attempt to look up the class
-        zend_class_entry * ce = zend_lookup_class(attribute->name);
+        zend_class_entry *ce = zend_lookup_class(attribute->name);
         if(!ce)
         {
             zend_hash_move_forward(execute_data->func->common.attributes);
@@ -31,7 +29,7 @@ static void observer(zend_execute_data *execute_data, zval *return_value)
             zend_object* object = zend_objects_new(ce); // TODO call constructor here
             zval retval;
             zend_fcall_info fci;
-            fci.function_name = hookMethodName;
+            ZVAL_STRINGL(&fci.function_name, estrdup(begin ? "before" : "after"), strlen(begin ? "before" : "after"));
             fci.named_params = NULL;
             fci.param_count = 3;
             zval params[3];
@@ -91,8 +89,8 @@ static zend_observer_fcall_handlers global_hook(zend_execute_data *execute_data)
 static PHP_MINIT_FUNCTION(observer)
 {
 	zend_observer_fcall_register(global_hook);
-    register_class_PreHook();
-    register_class_PostHook();
+    preHook = register_class_iggyvolz_hooks_PreHook();
+    postHook = register_class_iggyvolz_hooks_PostHook();
 	return SUCCESS;
 }
 

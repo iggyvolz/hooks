@@ -1,6 +1,7 @@
 <?php
 
 /** @generate-class-entries */
+namespace iggyvolz\hooks;
 
 interface PreHook {
     public function before(string $method, null|object|string $target, array $params): void;
