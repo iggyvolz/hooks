@@ -2,25 +2,21 @@
 #include <php.h>
 #include "Zend/zend_observer.h"
 #include "zend_attributes.h"
+#include "hooks_arginfo.h"
 
-zend_llist *hook_callback_functions = 0;
-zif_handler* hookFunction;
-zend_execute_data *_execute_data;
 static void observer(zend_execute_data *execute_data, zval *return_value)
 {
     bool begin = (return_value == NULL);
     zval hookName;
-    // TODO register PreHook and PostHook internally
     ZVAL_STRINGL(&hookName, estrdup(begin ? "PreHook" : "PostHook"), strlen(begin ? "PreHook" : "PostHook"));
     zval hookMethodName;
-    // TODO register PreHook and PostHook internally
     ZVAL_STRINGL(&hookMethodName, estrdup(begin ? "before" : "after"), strlen(begin ? "before" : "after"));
     zend_class_entry * hookInterface = zend_lookup_class(Z_STR(hookName));
     if(!hookInterface) return;
     // Loop through every attribute to see if we should call it
     zval* attribute_zval;
     zend_hash_internal_pointer_reset(execute_data->func->common.attributes);
-    while(attribute_zval = zend_hash_get_current_data(execute_data->func->common.attributes)) {
+    while((attribute_zval = zend_hash_get_current_data(execute_data->func->common.attributes))) {
         zend_attribute *attribute = (zend_attribute *)(attribute_zval->value.ptr);
         // Attempt to look up the class
         zend_class_entry * ce = zend_lookup_class(attribute->name);
@@ -33,14 +29,12 @@ static void observer(zend_execute_data *execute_data, zval *return_value)
         {
             // Call desired function
             zend_object* object = zend_objects_new(ce); // TODO call constructor here
-            hookFunction = (zif_handler*)(zend_hash_find(&(ce->function_table), hookMethodName.value.str)->value.ptr);
             zval retval;
             zend_fcall_info fci;
             fci.function_name = hookMethodName;
             fci.named_params = NULL;
-            fci.param_count = begin ? 2 : 3;
+            fci.param_count = 3;
             zval params[3];
-            // execute_data->func->common.function_name->val;
             ZVAL_STRINGL(&params[0], estrdup(execute_data->func->common.function_name->val), strlen(execute_data->func->common.function_name->val));
             params[1] = execute_data->This;
             if(Z_TYPE(params[1]) == IS_UNDEF) {
@@ -53,7 +47,14 @@ static void observer(zend_execute_data *execute_data, zval *return_value)
                     ZVAL_NULL(&params[1]);
                 }
             }
-            if(!begin) {
+            if(begin) {
+                array_init(&params[2]);
+                int arg_count = ZEND_CALL_NUM_ARGS(execute_data);
+                for (int i = 1; i <= arg_count; i++)
+                {
+                    add_next_index_zval(&params[2], ZEND_CALL_ARG(execute_data, i));
+                }
+            } else {
                 params[2] = *return_value;
             }
             fci.params = params;
@@ -90,6 +91,8 @@ static zend_observer_fcall_handlers global_hook(zend_execute_data *execute_data)
 static PHP_MINIT_FUNCTION(observer)
 {
 	zend_observer_fcall_register(global_hook);
+    register_class_PreHook();
+    register_class_PostHook();
 	return SUCCESS;
 }
 
@@ -103,7 +106,7 @@ zend_module_entry hooks_module_entry = {
     NULL,
     NULL,
     NULL,
-    "0.1.0",
+    "0.2.0",
     STANDARD_MODULE_PROPERTIES
 };
 
